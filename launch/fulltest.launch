@@ -1,0 +1,78 @@
+<launch>
+
+<arg name="QUAD_NAME" default="quad" />
+<arg name="QUAD_IP" default="192.168.1.1" />
+<arg name="FIRST_QUAD" default="TRUE"/>
+
+<node pkg="ros_vrpn_client" name="quad" type="ros_vrpn_client" args="_vrpn_server_ip:=155.98.9.183" required="true" />
+<node pkg="joy" type="joy_node" name="Xbox_Controller" args="/dev/input/js0" respawn="true"/>
+
+<node pkg = "darc_mocap"         type="mocap"         name="Mocap"         respawn="true" />
+<node pkg = "darc_ardrone"       type="drone_control" name="Drone_Control" respawn = "true" />
+<node pkg = "darc_ardrone"       type="flyfromjoy"    name="Joy_Node"      respawn = "true" />
+<node pkg = "darc_position_hold" type="position_hold" name="Pos_Hold"      respawn = "true" />
+<node pkg = "darc_waypoints"     type="waypoint_generator" name="Waypoints" respawn = "true" />
+
+<node pkg="ardrone_autonomy" type="ardrone_driver" name = "Drone_Drivers" respawn="true" 	 	output="screen"  clear_params="true" args="-ip $(arg QUAD_IP)"> 
+		<param name="do_imu_caliberation" value="true" />
+		<param name="tf_prefix" value="$(arg QUAD_NAME)" />
+		<param name="looprate" value="50" />
+		<param name="outdoor" value="0" />
+		<param name="flight_without_shell" value="0" />
+		<param name="max_bitrate" value="4000" />
+		<param name="bitrate" value="4000" />
+		<param name="altitude_max" value="5000" />
+		<param name="altitude_min" value="500" />
+		<param name = "euler_angle_max" value = "0.3" />
+		<param name="control_vz_max" value="2000" /> 
+		<param name="control_yaw" value="1.75" />
+		<param name="navdata_demo" value="FALSE" /> 
+			<param name="enable_navdata_time" value="false" />
+			<param name="enable_navdata_raw_measures" value="FALSE" />
+			<param name="enable_navdata_phys_measures" value="FALSE" />
+			<param name="enable_navdata_gyros_offsets" value="false" />
+			<param name="enable_navdata_euler_angles" value="FALSE" />
+			<param name="enable_navdata_references" value="FALSE" />
+			<param name="enable_navdata_trims" value="FALSE" />
+			<param name="enable_navdata_rc_references" value="FALSE" />
+			<param name="enable_navdata_pwm" value="true" />
+			<param name="enable_navdata_altitude" value="false" />
+			<param name="enable_navdata_vision_raw" value="true" />
+			<param name="enable_navdata_vision_of" value="false" />
+			<param name="enable_navdata_vision" value="false" />
+			<param name="enable_navdata_vision_perf" value="false" />
+			<param name="enable_navdata_trackers_send" value="false" />
+			<param name="enable_navdata_vision_detect" value="true" />
+			<param name="enable_navdata_watchdog" value="false" />
+			<param name="enable_navdata_adc_data_frame" value="false" />
+			<param name="enable_navdata_video_stream" value="false" />
+			<param name="enable_navdata_games" value="false" />
+			<param name="enable_navdata_pressure_raw" value="false" />
+			<param name="enable_navdata_magneto" value="false" />
+			<param name="enable_navdata_wind_speed" value="false" />
+			<param name="enable_navdata_kalman_pressure" value="false" />
+			<param name="enable_navdata_hdvideo_stream" value="false" />
+			<param name="enable_navdata_wifi" value="false" />
+			<param name="enable_navdata_zimmu_3000" value="false" />
+		
+		
+		<param name="detect_type" value="CAD_TYPE_VISION" /> 
+
+
+		<param if="$(arg FIRST_QUAD)" name="enemy_colors" value="2" />
+
+		<param unless="$(arg FIRST_QUAD)" name="enemy_colors" value="3" />
+
+		<param name= "enemy_without_shell" value="0" /> 
+
+		<param name="detections_select_h" value="32" />
+		<param name="detections_select_v" value="0" />
+		
+
+		<rosparam param="cov/imu_la">[0.1, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.1]</rosparam>
+		<rosparam param="cov/imu_av">[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]</rosparam>
+		<rosparam param="cov/imu_or">[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 100000.0]</rosparam>
+</node>
+
+</launch>
+
