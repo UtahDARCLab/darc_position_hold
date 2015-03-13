@@ -196,7 +196,7 @@ int main(int argc, char** argv)
                 yiErr -= Kyi*(desired_position.y - curr_pos.y);
             }
         }
-        
+    
         // Pitch is error about x position
         u_out.angular.y = right_button*(xpErr + xiErr + xdErr) + (1.0 - right_button)*u_curr.angular.y;
         
@@ -235,6 +235,15 @@ int main(int argc, char** argv)
         
         // Yaw if rotation about z axis
         u_out.angular.z = right_button*(yawpErr + yawdErr) + (1.0 - right_button)*u_curr.angular.z;
+        
+        if(u_out.angular.z > 1.0)
+        {
+            u_out.angular.z = 1.0;
+        }
+        else if(u_out.angular.z < -1.0)
+        {
+            u_out.angular.z = -1.0;
+        }
         
         // FOR TUNING/DEBUGGING. turn off controller on axes
         u_out.angular.x = u_curr.angular.x;
