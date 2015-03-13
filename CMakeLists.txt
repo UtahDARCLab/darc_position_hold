@@ -5,6 +5,7 @@ project(darc_position_hold)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  sensor_msgs
   geometry_msgs
   roscpp
   rospy

@@ -1,0 +1,31 @@
+<launch>
+
+<node pkg="ros_vrpn_client" name="quad" type="ros_vrpn_client" args="_vrpn_server_ip:=155.98.9.183" required="true" />
+<node pkg="joy" type="joy_node" name="Xbox_Controller" args="/dev/input/js0" respawn="true"/>
+
+<node pkg = "darc_mocap"         type="mocap"         name="Mocap"         respawn="true" />
+<node pkg = "darc_manual_fly" type="darc_manual_fly_node" name="Control" respawn="true"/>
+
+<arg name="pd" default="0.0"/>
+<param name="pd_ratio" value="$(arg pd)"/>
+
+<arg name="pi" default="0.0"/>
+<param name="pi_ratio" value="$(arg pi)"/>
+
+<arg name="kx" default="0.0"/>
+<param name="x_gain" value="$(arg kx)"/>
+
+<arg name="ky" default="0.0"/>
+<param name="y_gain" value="$(arg ky)"/>
+
+<arg name="kz" default="0.0"/>
+<param name="z_gain" value="$(arg kz)"/>
+
+<arg name="kyaw" default="0.00"/>
+<param name="yaw_gain" value="$(arg kyaw)"/>
+
+<node pkg = "darc_position_hold" type="position_hold" name="Pos_Hold"      respawn = "true" output="screen"/>
+<node pkg = "darc_waypoints"     type="waypoint_generator" name="Waypoints" respawn = "true" />
+
+</launch>
+

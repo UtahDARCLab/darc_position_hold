@@ -1,19 +1,37 @@
 // Includes
 #include <ros/ros.h>
 #include <geometry_msgs/Vector3.h>
+#include <geometry_msgs/Twist.h>
+#include <sensor_msgs/Joy.h>
 #include <std_msgs/Float32.h>
 
-geometry_msgs::Vector3 u_out, curr_u;
+//geometry_msgs::Vector3 u_out, curr_u;
+geometry_msgs::Twist u_out, u_curr, u_des;
+
 geometry_msgs::Vector3 curr_pos, hold_pos, curr_vel;
 geometry_msgs::Vector3 desired_position;
-std_msgs::Float32 yaw_out, curr_u_yaw;
+
+double right_button;
+
 double curr_yaw, hold_yaw, curr_yaw_vel;
 
-double Kp = 0.2;
-double Kpx = Kp, Kpy = Kp, Kpz = 2.0*Kp, Kpyaw = Kp;
+double Kxp, Kxi, Kxd;
+double Kyp, Kyi, Kyd;
+double Kzp, Kzi, Kzd;
+double Kyawp, Kyawd;
 
-double Kd = 0.1;
-double Kdx = Kd, Kdy = Kd, Kdz = Kd, Kdyaw = 0.5*Kd;
+double xpErr, xiErr, xdErr;
+double ypErr, yiErr, ydErr;
+double zpErr, ziErr, zdErr;
+double yawpErr, yawdErr;
+
+double a, b;
+
+// Read xbox right trigger position
+void joy_callback(const sensor_msgs::Joy& joy_msg_in)
+{
+	right_button = joy_msg_in.buttons[5];
+}
 
 // Read mocap position
 void pos_callback(const geometry_msgs::Vector3& pos_msg_in)
@@ -44,17 +62,12 @@ void vel_callback(const geometry_msgs::Vector3& vel_msg_in)
 }
 
 // Read current input
-void u_callback(const geometry_msgs::Vector3& u_msg_in)
+void u_callback(const geometry_msgs::Twist& u_msg_in)
 {
-    curr_u.x = u_msg_in.x;
-    curr_u.y = u_msg_in.y;
-    curr_u.z = u_msg_in.z;
-}
-
-// Read yaw input
-void u_yaw_callback(const std_msgs::Float32& u_yaw_msg_in)
-{
-    curr_u_yaw = u_yaw_msg_in;
+    u_curr.angular.x = u_msg_in.angular.x;
+    u_curr.angular.y = u_msg_in.angular.y;
+    u_curr.angular.z = u_msg_in.angular.z;
+    u_curr.linear.z  = u_msg_in.linear.z;
 }
 
 // Read desired position
@@ -64,20 +77,21 @@ void desired_position_callback(const geometry_msgs::Vector3& des_pos_msg_in)
     desired_position.y = des_pos_msg_in.y;
     desired_position.z = des_pos_msg_in.z;
 }
-
+ 
 int main(int argc, char** argv)
 {
     ros::init(argc,argv,"position_hold");
     ros::NodeHandle node;
     ros::Rate loop_rate(50);
     
-    ros::Publisher u_pub,yaw_pub;
-    u_pub = node.advertise<geometry_msgs::Vector3>("new_u",1);
-    yaw_pub = node.advertise<std_msgs::Float32>("new_yaw",1);
+    ros::Publisher u_pub;
+    u_pub = node.advertise<geometry_msgs::Twist>("new_u",1);
 
-    ros::Subscriber u_sub, u_yaw_sub;
+    ros::Subscriber joy_sub;
+    joy_sub = node.subscribe("joy",1,joy_callback);
+    
+    ros::Subscriber u_sub;
     u_sub = node.subscribe("desired_u",1,u_callback);
-    u_yaw_sub = node.subscribe("desired_yaw",1,u_yaw_callback);
     
     ros::Subscriber pos_sub, vel_sub, yaw_sub, yaw_vel_sub;
     pos_sub = node.subscribe("current_position",1,pos_callback);
@@ -88,25 +102,147 @@ int main(int argc, char** argv)
     ros::Subscriber desired_pos_sub;
     desired_pos_sub = node.subscribe("desired_position",1,desired_position_callback);
     
-    double eps = 0.1;
+    if(node.getParam("/pd_ratio",b)){;}	
+    else
+    {
+	    ROS_ERROR("Set proportional to derivative ratio");
+    	return 0;
+    }
+    
+    if(node.getParam("/pi_ratio",a)){;}
+    else
+    {
+        ROS_ERROR("Set proportional to integral ratio");
+        return 0;
+    }
+    
+    if( node.getParam("/x_gain",Kxp)){;}
+    else
+    {
+        ROS_ERROR("Set X proportional gain");
+        return 0;
+    }
+    
+    Kxi = a*Kxp;
+    Kxd = b*Kxp;
+
+    if( node.getParam("/y_gain",Kyp)){;}
+    else
+    {
+        ROS_ERROR("Set Y proportional gain");
+        return 0;
+    }
+    
+    Kyi = a*Kyp;
+    Kyd = b*Kyp;
+
+    if( node.getParam("/z_gain",Kzp)){;}
+    else
+    {
+        ROS_ERROR("Set Z (linear) proportional gain");
+        return 0;
+    }
+    
+    Kzi = a*Kzp;
+    Kzd = b*Kzp;
+
+    if( node.getParam("/yaw_gain",Kyawp)){;}
+    else
+    {
+        ROS_ERROR("Set yaw-rate proportional gain");
+        return 0;
+    }
+    
+    Kyawd = b*Kyawp;
+    
     while(ros::ok())
     {
-        u_out.x = curr_u.x;
-        u_out.y = curr_u.y;
-        u_out.z = curr_u.z;
-        yaw_out = curr_u_yaw;
-        
-        if(u_out.x < eps && u_out.x > -eps)
-            u_out.x = Kpx*(desired_position.x - curr_pos.x) - Kdx*curr_vel.x;
-        if(u_out.y < eps && u_out.y > -eps)
-            u_out.y = Kpy*(desired_position.y - curr_pos.y) - Kdy*curr_vel.y;
-        if(u_out.z < eps && u_out.z > -eps)
-            u_out.z = Kpz*(desired_position.z - curr_pos.z) - Kdz*curr_vel.z;
-        if(yaw_out.data < eps && yaw_out.data > -eps)
-            yaw_out.data = -Kpyaw*curr_yaw - Kdyaw*curr_yaw_vel;
-        u_pub.publish(u_out);
-        yaw_pub.publish(yaw_out);
         ros::spinOnce();
+
+        if(!right_button) // if button not pressed, reset integral terms
+        {
+            xiErr = yiErr = ziErr = 0.0;
+        }
+        
+        xpErr  = Kxp*(desired_position.x - curr_pos.x);
+        xiErr += Kxi*(desired_position.x - curr_pos.x);
+        xdErr  = Kxd*(-curr_vel.x);
+        
+        ypErr  = Kyp*(desired_position.y - curr_pos.y);
+        yiErr += Kyi*(desired_position.y - curr_pos.y);
+        ydErr  = Kyd*(-curr_vel.x);
+        
+        zpErr  = Kzp*(desired_position.z - curr_pos.z);
+        ziErr += Kzi*(desired_position.z - curr_pos.z);
+        zdErr  = Kzd*(-curr_vel.z);
+        
+        yawpErr = Kyawp*(-curr_yaw);
+        yawdErr = Kyawd*(-curr_yaw_vel);
+        
+        // Roll is error about y position
+        u_out.angular.x = right_button*(ypErr + yiErr + ydErr) + (1.0 - right_button)*u_curr.angular.x;
+        
+        // Check for roll integrator windup
+        if(right_button)
+        {
+            if(u_out.angular.x > 1.0)
+            {
+                u_out.angular.x = 1.0;
+                yiErr -= Kyi*(desired_position.y - curr_pos.y);
+            }
+            else if(u_out.angular.x < -1.0)
+            {
+                u_out.angular.x = -1.0;
+                yiErr -= Kyi*(desired_position.y - curr_pos.y);
+            }
+        }
+        
+        // Pitch is error about x position
+        u_out.angular.y = right_button*(xpErr + xiErr + xdErr) + (1.0 - right_button)*u_curr.angular.y;
+        
+        // Check for pitch integrator windup
+        if(right_button)
+        {
+            if(u_out.angular.y > 1.0)
+            {
+                u_out.angular.y = 1.0;
+                xiErr -= Kxi*(desired_position.x - curr_pos.x);
+            }
+            else if(u_out.angular.y < -1.0)
+            {
+                u_out.angular.y = -1.0;
+                xiErr -= Kxi*(desired_position.x - curr_pos.x);
+            }
+        }
+        
+        // Thrust is error about z position
+        u_out.linear.z = right_button*(zpErr + ziErr + zdErr) + (1.0 - right_button)*u_curr.linear.z;
+        
+        // Check for thrust integrator windup
+        if(right_button)
+        {
+            if(u_out.linear.z > 1.0)
+            {
+                u_out.linear.z = 1.0;
+                ziErr -= Kzi*(desired_position.z - curr_pos.z);
+            }
+            else if(u_out.linear.z < -1.0)
+            {
+                u_out.linear.z = -1.0;
+                ziErr -= Kzi*(desired_position.z - curr_pos.z);
+            }
+        }
+        
+        // Yaw if rotation about z axis
+        u_out.angular.z = right_button*(yawpErr + yawdErr) + (1.0 - right_button)*u_curr.angular.z;
+        
+        // FOR TUNING/DEBUGGING. turn off controller on axes
+        u_out.angular.x = u_curr.angular.x;
+        u_out.angular.y = u_curr.angular.y;
+        u_out.angular.z = u_curr.angular.z;
+        /*u_out.linear.z  = u_curr.linear.z;*/
+        
+        u_pub.publish(u_out);
         loop_rate.sleep();
     }
 }
