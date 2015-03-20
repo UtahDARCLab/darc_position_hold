@@ -8,7 +8,7 @@
 //geometry_msgs::Vector3 u_out, curr_u;
 geometry_msgs::Twist u_out, u_curr, u_des;
 
-geometry_msgs::Vector3 curr_pos, hold_pos, curr_vel;
+geometry_msgs::Vector3 curr_pos, prev_pos, hold_pos, curr_vel;
 geometry_msgs::Vector3 desired_position;
 
 double right_button;
@@ -146,6 +146,8 @@ int main(int argc, char** argv)
     Kzi = a*Kzp;
     Kzd = b*Kzp;
 
+    ROS_INFO("Kzi: %f \n Kzd: %f", Kzi, Kzd);
+    
     if( node.getParam("/yaw_gain",Kyawp)){;}
     else
     {
@@ -158,29 +160,29 @@ int main(int argc, char** argv)
     while(ros::ok())
     {
         ros::spinOnce();
-
+        
         if(!right_button) // if button not pressed, reset integral terms
         {
             xiErr = yiErr = ziErr = 0.0;
         }
         
-        xpErr  = Kxp*(desired_position.x - curr_pos.x);
-        xiErr += Kxi*(desired_position.x - curr_pos.x);
-        xdErr  = Kxd*(-curr_vel.x);
+        xpErr  = Kxp*(desired_position.y - curr_pos.y);
+        xiErr += Kxi*(desired_position.y - curr_pos.y);
+        xdErr  = -Kxd*curr_vel.y;
         
-        ypErr  = Kyp*(desired_position.y - curr_pos.y);
-        yiErr += Kyi*(desired_position.y - curr_pos.y);
-        ydErr  = Kyd*(-curr_vel.x);
+        ypErr  = Kyp*(desired_position.x - curr_pos.x);
+        yiErr += Kyi*(desired_position.x - curr_pos.x);
+        ydErr  = -Kyd*curr_vel.x;
         
         zpErr  = Kzp*(desired_position.z - curr_pos.z);
         ziErr += Kzi*(desired_position.z - curr_pos.z);
-        zdErr  = Kzd*(-curr_vel.z);
+        zdErr  = -Kzd*curr_vel.z;
         
-        yawpErr = Kyawp*(-curr_yaw);
-        yawdErr = Kyawd*(-curr_yaw_vel);
+        yawpErr = -Kyawp*curr_yaw;
+        yawdErr = -Kyawd*curr_yaw_vel;
         
         // Roll is error about y position
-        u_out.angular.x = right_button*(ypErr + yiErr + ydErr) + (1.0 - right_button)*u_curr.angular.x;
+        u_out.angular.x = right_button*(xpErr + xiErr + xdErr) + (1.0 - right_button)*u_curr.angular.x;
         
         // Check for roll integrator windup
         if(right_button)
@@ -188,17 +190,22 @@ int main(int argc, char** argv)
             if(u_out.angular.x > 1.0)
             {
                 u_out.angular.x = 1.0;
-                yiErr -= Kyi*(desired_position.y - curr_pos.y);
+                xiErr -= Kxi*(desired_position.y - curr_pos.y);
             }
             else if(u_out.angular.x < -1.0)
             {
                 u_out.angular.x = -1.0;
-                yiErr -= Kyi*(desired_position.y - curr_pos.y);
+                xiErr -= Kxi*(desired_position.y - curr_pos.y);
+            }
+            if( (prev_pos.y < desired_position.y && curr_pos.y > desired_position.y) ||
+                (prev_pos.y > desired_position.y && curr_pos.y < desired_position.y) )
+            {
+                xiErr = 0.0;
             }
         }
     
         // Pitch is error about x position
-        u_out.angular.y = right_button*(xpErr + xiErr + xdErr) + (1.0 - right_button)*u_curr.angular.y;
+        u_out.angular.y = right_button*(ypErr + yiErr + ydErr) + (1.0 - right_button)*u_curr.angular.y;
         
         // Check for pitch integrator windup
         if(right_button)
@@ -206,17 +213,24 @@ int main(int argc, char** argv)
             if(u_out.angular.y > 1.0)
             {
                 u_out.angular.y = 1.0;
-                xiErr -= Kxi*(desired_position.x - curr_pos.x);
+                yiErr -= Kyi*(desired_position.x - curr_pos.x);
             }
             else if(u_out.angular.y < -1.0)
             {
                 u_out.angular.y = -1.0;
-                xiErr -= Kxi*(desired_position.x - curr_pos.x);
+                yiErr -= Kyi*(desired_position.x - curr_pos.x);
+            }
+            if( (prev_pos.x < desired_position.x && curr_pos.x > desired_position.x) ||
+                (prev_pos.x > desired_position.x && curr_pos.x < desired_position.x) )
+            {
+                yiErr = 0.0;
             }
         }
         
         // Thrust is error about z position
         u_out.linear.z = right_button*(zpErr + ziErr + zdErr) + (1.0 - right_button)*u_curr.linear.z;
+        
+        ROS_INFO("u_out.z: %f", u_out.linear.z);
         
         // Check for thrust integrator windup
         if(right_button)
@@ -231,7 +245,14 @@ int main(int argc, char** argv)
                 u_out.linear.z = -1.0;
                 ziErr -= Kzi*(desired_position.z - curr_pos.z);
             }
+            if( (prev_pos.z < desired_position.z && curr_pos.z > desired_position.z) ||
+                (prev_pos.z > desired_position.z && curr_pos.z < desired_position.z) )
+            {
+                ziErr = 0.0;
+            }
         }
+        
+        ROS_INFO("%f, %f, %f", zpErr, ziErr, zdErr);
         
         // Yaw if rotation about z axis
         u_out.angular.z = right_button*(yawpErr + yawdErr) + (1.0 - right_button)*u_curr.angular.z;
