@@ -9,9 +9,9 @@
 geometry_msgs::Twist u_out, u_curr, u_des;
 
 geometry_msgs::Vector3 curr_pos, prev_pos, hold_pos, curr_vel;
-geometry_msgs::Vector3 desired_position;
+geometry_msgs::Vector3 desired_position, offset_position;
 
-double right_button;
+double right_button, reset_button, offset_button;
 
 double curr_yaw, hold_yaw, curr_yaw_vel;
 
@@ -36,9 +36,20 @@ void joy_callback(const sensor_msgs::Joy& joy_msg_in)
 // Read mocap position
 void pos_callback(const geometry_msgs::Vector3& pos_msg_in)
 {
-	curr_pos.x = pos_msg_in.x;
-	curr_pos.y = pos_msg_in.y;
-	curr_pos.z = pos_msg_in.z;
+    if(reset_button)
+    {
+        offset_position.x = 0.0;
+        offset_position.y = 0.0;
+        offset_position.z = 0.0;
+    }
+    else if(offset_button){
+        offset_position.x = pos_msg_in.x;
+        offset_position.y = pos_msg_in.y;
+        offset_position.z = pos_msg_in.z;
+    }
+	curr_pos.x = pos_msg_in.x - offset_position.x;
+	curr_pos.y = pos_msg_in.y - offset_position.y;
+	curr_pos.z = pos_msg_in.z - offset_position.z;
 }
 
 // Read mocap yaw angle
@@ -102,6 +113,7 @@ int main(int argc, char** argv)
     ros::Subscriber desired_pos_sub;
     desired_pos_sub = node.subscribe("desired_position",1,desired_position_callback);
     
+    // pulling in params from the launch file
     if(node.getParam("/pd_ratio",b)){;}	
     else
     {
@@ -122,9 +134,10 @@ int main(int argc, char** argv)
         ROS_ERROR("Set X proportional gain");
         return 0;
     }
-    
+    //sets the gains from the ratio. Saves from setting all the gains
     Kxi = a*Kxp;
     Kxd = b*Kxp;
+
 
     if( node.getParam("/y_gain",Kyp)){;}
     else
@@ -132,7 +145,6 @@ int main(int argc, char** argv)
         ROS_ERROR("Set Y proportional gain");
         return 0;
     }
-    
     Kyi = a*Kyp;
     Kyd = b*Kyp;
 
@@ -145,8 +157,8 @@ int main(int argc, char** argv)
     
     Kzi = a*Kzp;
     Kzd = b*Kzp;
-
-    ROS_INFO("Kzi: %f \n Kzd: %f", Kzi, Kzd);
+    
+    //ROS_INFO("Kzi: %f \n Kzd: %f", Kzi, Kzd);
     
     if( node.getParam("/yaw_gain",Kyawp)){;}
     else
@@ -160,33 +172,49 @@ int main(int argc, char** argv)
     while(ros::ok())
     {
         ros::spinOnce();
+                
+        //seding out to make sure it reset
+        ROS_INFO("new_position [%.4f, %.4f, %.4f]",curr_pos.x, curr_pos.y, curr_pos.z);
+        //the left bumper button resets offset position
+        //xbox button sets the current offset position
         
         if(!right_button) // if button not pressed, reset integral terms
         {
             xiErr = yiErr = ziErr = 0.0;
         }
         
+        //Roll about the x axis
+        //rotation x axis movement along y 
         xpErr  = Kxp*(desired_position.y - curr_pos.y);
         xiErr += Kxi*(desired_position.y - curr_pos.y);
         xdErr  = -Kxd*curr_vel.y;
         
+        //Pitch about the y axis
+        //movement along x        
         ypErr  = Kyp*(desired_position.x - curr_pos.x);
         yiErr += Kyi*(desired_position.x - curr_pos.x);
         ydErr  = -Kyd*curr_vel.x;
-        
+
+        //Error in the height (z)
+        //controls thrust        
         zpErr  = Kzp*(desired_position.z - curr_pos.z);
         ziErr += Kzi*(desired_position.z - curr_pos.z);
         zdErr  = -Kzd*curr_vel.z;
         
+        //actual yaw angle about zero 
         yawpErr = -Kyawp*curr_yaw;
         yawdErr = -Kyawd*curr_yaw_vel;
         
         // Roll is error about y position
+        // if button pressed, getting applying the controller
+        // else just input form joystick (new_u of joystick)
         u_out.angular.x = right_button*(xpErr + xiErr + xdErr) + (1.0 - right_button)*u_curr.angular.x;
         
         // Check for roll integrator windup
         if(right_button)
         {
+        
+            // check if it is saturated and cap it at -1 or 1
             if(u_out.angular.x > 1.0)
             {
                 u_out.angular.x = 1.0;
@@ -197,11 +225,13 @@ int main(int argc, char** argv)
                 u_out.angular.x = -1.0;
                 xiErr -= Kxi*(desired_position.y - curr_pos.y);
             }
+            /*
+            // this is here to try and damp out the overshoot
             if( (prev_pos.y < desired_position.y && curr_pos.y > desired_position.y) ||
                 (prev_pos.y > desired_position.y && curr_pos.y < desired_position.y) )
             {
                 xiErr = 0.0;
-            }
+            }*/
         }
     
         // Pitch is error about x position
@@ -220,17 +250,21 @@ int main(int argc, char** argv)
                 u_out.angular.y = -1.0;
                 yiErr -= Kyi*(desired_position.x - curr_pos.x);
             }
+            
+             /*
+            // this is here to try and damp out the overshoot
+           
             if( (prev_pos.x < desired_position.x && curr_pos.x > desired_position.x) ||
                 (prev_pos.x > desired_position.x && curr_pos.x < desired_position.x) )
             {
                 yiErr = 0.0;
-            }
+            }*/
         }
         
         // Thrust is error about z position
         u_out.linear.z = right_button*(zpErr + ziErr + zdErr) + (1.0 - right_button)*u_curr.linear.z;
         
-        ROS_INFO("u_out.z: %f", u_out.linear.z);
+        //ROS_INFO("u_out.z: %f", u_out.linear.z);
         
         // Check for thrust integrator windup
         if(right_button)
@@ -245,14 +279,16 @@ int main(int argc, char** argv)
                 u_out.linear.z = -1.0;
                 ziErr -= Kzi*(desired_position.z - curr_pos.z);
             }
+            /*
+            // this is here to try and damp out the overshoot
             if( (prev_pos.z < desired_position.z && curr_pos.z > desired_position.z) ||
                 (prev_pos.z > desired_position.z && curr_pos.z < desired_position.z) )
             {
                 ziErr = 0.0;
-            }
+            }*/
         }
         
-        ROS_INFO("%f, %f, %f", zpErr, ziErr, zdErr);
+        //ROS_INFO("%f, %f, %f", zpErr, ziErr, zdErr);
         
         // Yaw if rotation about z axis
         u_out.angular.z = right_button*(yawpErr + yawdErr) + (1.0 - right_button)*u_curr.angular.z;
@@ -267,9 +303,9 @@ int main(int argc, char** argv)
         }
         
         // FOR TUNING/DEBUGGING. turn off controller on axes
-        u_out.angular.x = u_curr.angular.x;
-        u_out.angular.y = u_curr.angular.y;
-        u_out.angular.z = u_curr.angular.z;
+        //u_out.angular.x = u_curr.angular.x;
+        //u_out.angular.y = u_curr.angular.y;
+        //u_out.angular.z = u_curr.angular.z;
         /*u_out.linear.z  = u_curr.linear.z;*/
         
         u_pub.publish(u_out);
