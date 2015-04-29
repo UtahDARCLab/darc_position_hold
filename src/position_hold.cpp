@@ -193,6 +193,7 @@ int main(int argc, char** argv)
     
         // FOR TUNING/DEBUGGING. uncomment to turn off controller on a given axes
         //u_out.linear.z  = u_curr.linear.z;    // Thrust
+        //u_out.linear.z = 0.15;
         //u_out.angular.x = u_curr.angular.x;   // Roll
         //u_out.angular.y = u_curr.angular.y;   // Pitch
         //u_out.angular.z = u_curr.angular.z;   // Yaw
