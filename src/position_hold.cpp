@@ -31,6 +31,8 @@ double a, b;
 void joy_callback(const sensor_msgs::Joy& joy_msg_in)
 {
 	right_button = joy_msg_in.buttons[5];
+	reset_button = joy_msg_in.buttons[8];
+	offset_button = joy_msg_in.buttons[4];
 }
 
 // Read mocap position
@@ -262,7 +264,7 @@ int main(int argc, char** argv)
         }
         
         // Thrust is error about z position
-        u_out.linear.z = right_button*(zpErr + ziErr + zdErr) + (1.0 - right_button)*u_curr.linear.z;
+        u_out.linear.z = right_button*(zpErr + 15.0*ziErr + 10.0*zdErr) + (1.0 - right_button)*u_curr.linear.z;
         
         //ROS_INFO("u_out.z: %f", u_out.linear.z);
         
@@ -291,7 +293,7 @@ int main(int argc, char** argv)
         //ROS_INFO("%f, %f, %f", zpErr, ziErr, zdErr);
         
         // Yaw if rotation about z axis
-        u_out.angular.z = right_button*(yawpErr + yawdErr) + (1.0 - right_button)*u_curr.angular.z;
+        u_out.angular.z = right_button*(yawpErr + yawdErr*0.0) + (1.0 - right_button)*u_curr.angular.z;
         
         if(u_out.angular.z > 1.0)
         {
@@ -306,7 +308,7 @@ int main(int argc, char** argv)
         //u_out.angular.x = u_curr.angular.x;
         //u_out.angular.y = u_curr.angular.y;
         //u_out.angular.z = u_curr.angular.z;
-        /*u_out.linear.z  = u_curr.linear.z;*/
+        //u_out.linear.z  = u_curr.linear.z;
         
         u_pub.publish(u_out);
         loop_rate.sleep();
