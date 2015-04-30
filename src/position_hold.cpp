@@ -4,6 +4,8 @@
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/Joy.h>
 #include <std_msgs/Float32.h>
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
 
 #define THRUST  0
 #define ROLL    1
@@ -18,8 +20,10 @@ geometry_msgs::Twist u_out, u_curr;
 // curr_vel is velocity input from mocap, found from first-order derivative
 // curr_yaw is global yaw from mocap
 // curr_yaw_vel is global yaw velocity from mocap, also first-order derivative
-geometry_msgs::Vector3 curr_pos, curr_vel;
-geometry_msgs::Vector3 desired_position, offset_position;
+geometry_msgs::Vector3 current_pos, current_vel, previous_pos;
+geometry_msgs::Vector3 desired_pos, offset_pos;
+Eigen::Vector3f rot_desired_pos, rot_current_pos, rot_current_vel;
+
 double curr_yaw, curr_yaw_vel;
 
 // right bumper for turning on PID on position
@@ -49,18 +53,18 @@ void pos_callback(const geometry_msgs::Vector3& pos_msg_in)
 {
     if(reset_button)
     {
-        offset_position.x = 0.0;
-        offset_position.y = 0.0;
-        offset_position.z = 0.0;
+        offset_pos.x = 0.0;
+        offset_pos.y = 0.0;
+        offset_pos.z = 0.0;
     }
     else if(offset_button){
-        offset_position.x = pos_msg_in.x;
-        offset_position.y = pos_msg_in.y;
-        offset_position.z = pos_msg_in.z;
+        offset_pos.x = pos_msg_in.x;
+        offset_pos.y = pos_msg_in.y;
+        offset_pos.z = pos_msg_in.z;
     }
-	curr_pos.x = pos_msg_in.x - offset_position.x;
-	curr_pos.y = pos_msg_in.y - offset_position.y;
-	curr_pos.z = pos_msg_in.z - offset_position.z;
+	current_pos.x = pos_msg_in.x - offset_pos.x;
+	current_pos.y = pos_msg_in.y - offset_pos.y;
+	current_pos.z = pos_msg_in.z - offset_pos.z;
 }
 
 // Read mocap yaw angle
@@ -78,9 +82,9 @@ void yawVel_callback(const geometry_msgs::Vector3& rdot_msg_in)
 // Read mocap velocity (first-order derivative)
 void vel_callback(const geometry_msgs::Vector3& vel_msg_in)
 {
-	curr_vel.x = vel_msg_in.x;
-	curr_vel.y = vel_msg_in.y;
-	curr_vel.z = vel_msg_in.z;
+	current_vel.x = vel_msg_in.x;
+	current_vel.y = vel_msg_in.y;
+	current_vel.z = vel_msg_in.z;
 }
 
 // Read current input, typically from joystick 
@@ -95,16 +99,19 @@ void u_callback(const geometry_msgs::Twist& u_msg_in)
 // Read desired position, typically from some waypoint node
 void desired_position_callback(const geometry_msgs::Vector3& des_pos_msg_in)
 {
-    desired_position.x = des_pos_msg_in.x;
-    desired_position.y = des_pos_msg_in.y;
-    desired_position.z = des_pos_msg_in.z;
+    desired_pos.x = des_pos_msg_in.x;
+    desired_pos.y = des_pos_msg_in.y;
+    desired_pos.z = des_pos_msg_in.z;
 }
 
 // function to calculate control effort on a given axis
 void calculateControlEffort(int index, double desPoint, double currPoint, double currVel);
 
 // function to check for integral windup on a given axis
-void checkForWindup(int index, double& control, double desPoint, double currPoint);
+void checkForWindup(int index, double& control, double desPoint, double currPoint, double prevPoint);
+
+// function to calculate rotated desired and current positions
+void rotatePositions();
 
 int main(int argc, char** argv)
 {
@@ -151,6 +158,11 @@ int main(int argc, char** argv)
     // Loop until node closed or some ROS crash/error
     while(ros::ok())
     {
+        // Set in old position for integral windup check
+        previous_pos.x = current_pos.x;
+        previous_pos.y = current_pos.y;
+        previous_pos.z = current_pos.z;
+        
         // Read in subscribed messages
         ros::spinOnce();
                 
@@ -159,7 +171,7 @@ int main(int argc, char** argv)
         flag = !flag;
         if(flag)
         {
-            ROS_INFO("new_position [%.4f, %.4f, %.4f]",curr_pos.x, curr_pos.y, curr_pos.z);
+            ROS_INFO("new_position [%.4f, %.4f, %.4f]",current_pos.x, current_pos.y, current_pos.z);
         }
 
         if(!right_button) // if button not pressed, reset integral terms to prevent windup
@@ -170,11 +182,16 @@ int main(int argc, char** argv)
             }
         }
         
+        // DOES NOT WORK!!!!!
+        // Rotate global axes into robot's frame (yaw only)
+        rotatePositions();
+        // ^^ DOES NOT WORK!!!!!
+        
         // Calculate PID control effort for each axis
-        calculateControlEffort(THRUST,  desired_position.z,  curr_pos.z,  curr_vel.z);
-        calculateControlEffort(ROLL,    desired_position.y,  curr_pos.y,  curr_vel.y);
-        calculateControlEffort(PITCH,   desired_position.x,  curr_pos.x,  curr_vel.x);
-        calculateControlEffort(YAW,     0.0,                 curr_yaw,    curr_yaw_vel);
+        calculateControlEffort(THRUST,  rot_desired_pos[2],  rot_current_pos[2],  rot_current_vel[2]);
+        calculateControlEffort(ROLL,    rot_desired_pos[1],  rot_current_pos[1],  rot_current_vel[1]);
+        calculateControlEffort(PITCH,   rot_desired_pos[0],  rot_current_pos[0],  rot_current_vel[0]);
+        calculateControlEffort(YAW,     0.0,                 curr_yaw,            curr_yaw_vel);
         
         // Apply thrust, roll, pitch, and yaw control
         u_out.linear.z  = right_button*controlEffort[THRUST] + (1.0 - right_button)*u_curr.linear.z;
@@ -185,10 +202,10 @@ int main(int argc, char** argv)
         // Check for integrator windup
         if(right_button)
         {
-            checkForWindup(THRUST, u_out.linear.z,   desired_position.z,  curr_pos.z);
-            checkForWindup(ROLL,   u_out.angular.x,  desired_position.y,  curr_pos.y);
-            checkForWindup(PITCH,  u_out.angular.y,  desired_position.x,  curr_pos.x);
-            checkForWindup(YAW,    u_out.angular.z,  0.0,                 curr_yaw);
+            checkForWindup(THRUST, u_out.linear.z,   rot_desired_pos[2],  rot_current_pos[2], previous_pos.z);
+            checkForWindup(ROLL,   u_out.angular.x,  rot_desired_pos[1],  rot_current_pos[1], previous_pos.y);
+            checkForWindup(PITCH,  u_out.angular.y,  rot_desired_pos[0],  rot_current_pos[0], previous_pos.x);
+            checkForWindup(YAW,    u_out.angular.z,  0.0,                 curr_yaw,           0.0);
         }
     
         // FOR TUNING/DEBUGGING. uncomment to turn off controller on a given axes
@@ -215,16 +232,43 @@ void calculateControlEffort(int index, double desPoint, double currPoint, double
 }
     
 // function to check for integral windup on a given axis
-void checkForWindup(int index, double& control, double desPoint, double currPoint)
+void checkForWindup(int index, double& control, double desPoint, double currPoint, double prevPoint)
 {
     if ( control > 1.0 )
     {
         control = 1.0;
         intErr[index] -= Ki[index]*(desPoint - currPoint);
     }
+    
     else if ( control < -1.0 )
     {
         control = -1.0;
         intErr[index] -= Ki[index]*(desPoint - currPoint);
     }
+    
+    if(index == ROLL || index == PITCH)
+    {
+        if( (prevPoint < desPoint && currPoint > desPoint) || (prevPoint > desPoint && currPoint < desPoint) )
+        {
+            intErr[index] = 0.0; 
+        }
+    }
+}
+
+// function to calculate rotated desired and current positions
+// DOES NOT WORK
+void rotatePositions()
+{
+    //Eigen::Rotation2D<float> rot2(curr_yaw);
+    //rot2 = rot2.inverse();
+    Eigen::Rotation2D<float> rot2(0.0);
+    
+    Eigen::Vector2f des_pos, curr_pos, curr_vel;
+    des_pos << desired_pos.x, desired_pos.y;
+    curr_pos << current_pos.x, current_pos.y;
+    curr_vel << current_vel.x, current_vel.y;
+    
+    rot_desired_pos << (rot2*des_pos)[0],  (rot2*des_pos)[1],  desired_pos.z;
+    rot_current_pos << (rot2*curr_pos)[0], (rot2*curr_pos)[1], current_pos.z;
+    rot_current_vel << (rot2*curr_vel)[0], (rot2*curr_vel)[1], current_vel.z;
 }
