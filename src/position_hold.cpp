@@ -118,7 +118,7 @@ int main(int argc, char** argv)
     // ROS Initialization stuff
     ros::init(argc,argv,"position_hold");
     ros::NodeHandle node;
-    ros::Rate loop_rate(50);
+    ros::Rate loop_rate(100);
     
     // ROS publishers: output new_u to apply to robot
     ros::Publisher u_pub;
@@ -168,11 +168,11 @@ int main(int argc, char** argv)
                 
         //seding out to make sure it reset
         // Send every other loop to slow down scree print
-        flag = !flag;
+        /*flag = !flag;
         if(flag)
         {
             ROS_INFO("new_position [%.4f, %.4f, %.4f]",current_pos.x, current_pos.y, current_pos.z);
-        }
+        }*/
 
         if(!right_button) // if button not pressed, reset integral terms to prevent windup
         {
@@ -214,6 +214,7 @@ int main(int argc, char** argv)
         //u_out.angular.x = u_curr.angular.x;   // Roll
         //u_out.angular.y = u_curr.angular.y;   // Pitch
         //u_out.angular.z = u_curr.angular.z;   // Yaw
+        //u_out.angular.z = 0.75;
         
         u_pub.publish(u_out);
         loop_rate.sleep();
@@ -259,9 +260,9 @@ void checkForWindup(int index, double& control, double desPoint, double currPoin
 // DOES NOT WORK
 void rotatePositions()
 {
-    //Eigen::Rotation2D<float> rot2(curr_yaw);
-    //rot2 = rot2.inverse();
-    Eigen::Rotation2D<float> rot2(0.0);
+    Eigen::Rotation2D<float> rot2(curr_yaw);
+    rot2 = rot2.inverse();
+    //Eigen::Rotation2D<float> rot2(0.0);
     
     Eigen::Vector2f des_pos, curr_pos, curr_vel;
     des_pos << desired_pos.x, desired_pos.y;
