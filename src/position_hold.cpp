@@ -141,18 +141,18 @@ int main(int argc, char** argv)
     desired_pos_sub = node.subscribe("desired_position",1,desired_position_callback);
     
     // Thrust proportional, integral, and derivative gains from launch file
-    node.getParam("/thrustP",Kp[THRUST]);
-    node.getParam("/thrustI",Ki[THRUST]);
-    node.getParam("/thrustD",Kd[THRUST]);
-    node.getParam("/rollP",  Kp[ROLL]);
-    node.getParam("/rollI",  Ki[ROLL]);
-    node.getParam("/rollD",  Kd[ROLL]);
-    node.getParam("/pitchP", Kp[PITCH]);
-    node.getParam("/pitchI", Ki[PITCH]);
-    node.getParam("/pitchD", Kd[PITCH]);
-    node.getParam("/yawP",   Kp[YAW]);
-    node.getParam("/yawI",   Ki[YAW]);
-    node.getParam("/yawD",   Kd[YAW]);
+    node.getParam("thrustP",Kp[THRUST]);
+    node.getParam("thrustI",Ki[THRUST]);
+    node.getParam("thrustD",Kd[THRUST]);
+    node.getParam("rollP",  Kp[ROLL]);
+    node.getParam("rollI",  Ki[ROLL]);
+    node.getParam("rollD",  Kd[ROLL]);
+    node.getParam("pitchP", Kp[PITCH]);
+    node.getParam("pitchI", Ki[PITCH]);
+    node.getParam("pitchD", Kd[PITCH]);
+    node.getParam("yawP",   Kp[YAW]);
+    node.getParam("yawI",   Ki[YAW]);
+    node.getParam("yawD",   Kd[YAW]);
 
     bool flag = false;
     // Loop until node closed or some ROS crash/error
@@ -214,7 +214,7 @@ int main(int argc, char** argv)
         //u_out.angular.x = u_curr.angular.x;   // Roll
         //u_out.angular.y = u_curr.angular.y;   // Pitch
         //u_out.angular.z = u_curr.angular.z;   // Yaw
-        //u_out.angular.z = 0.75;
+        //u_out.angular.z = 0.5;
         
         u_pub.publish(u_out);
         loop_rate.sleep();
