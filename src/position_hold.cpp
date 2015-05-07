@@ -30,6 +30,7 @@ double curr_yaw, curr_yaw_vel;
 // left bumper for setting the "zero" position of robot
 // xbox button for cancelling relative positioning of robot
 double right_button, reset_button, offset_button;
+int joy_a, joy_b, startControl;
 
 // proportional, integral, and derivative gain arrays
 double Kp[4], Ki[4], Kd[4];
@@ -46,6 +47,8 @@ void joy_callback(const sensor_msgs::Joy& joy_msg_in)
 	right_button = joy_msg_in.buttons[5];
 	reset_button = joy_msg_in.buttons[8];
 	offset_button = joy_msg_in.buttons[4];
+	joy_a = joy_msg_in.buttons[0];
+	joy_b = joy_msg_in.buttons[1];
 }
 
 // Read mocap position, allow for relative positioning with left bumper and reset button
@@ -119,7 +122,7 @@ int main(int argc, char** argv)
     ros::init(argc,argv,"position_hold");
     ros::NodeHandle node;
     ros::Rate loop_rate(100);
-    
+   
     // ROS publishers: output new_u to apply to robot
     ros::Publisher u_pub;
     u_pub = node.advertise<geometry_msgs::Twist>("new_u",1);
@@ -155,9 +158,10 @@ int main(int argc, char** argv)
     node.getParam("yawD",   Kd[YAW]);
 
     bool flag = false;
+    startControl = 0;
     // Loop until node closed or some ROS crash/error
     while(ros::ok())
-    {
+    {        
         // Set in old position for integral windup check
         previous_pos.x = current_pos.x;
         previous_pos.y = current_pos.y;
@@ -165,7 +169,19 @@ int main(int argc, char** argv)
         
         // Read in subscribed messages
         ros::spinOnce();
-                
+            
+        if( (joy_a && !startControl) || (joy_b && startControl) )
+        {
+            startControl = !startControl;
+        } 
+        if(startControl)
+        {
+            right_button = 1;
+        }
+        else
+        {
+            right_button = 0;
+        }   
         //seding out to make sure it reset
         // Send every other loop to slow down scree print
         /*flag = !flag;
