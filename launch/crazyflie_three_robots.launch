@@ -1,0 +1,147 @@
+<?xml version="1.0"?>
+
+<launch>
+  
+    <arg name="ROBOT_NAME1" default="quad1"/>
+    <arg name="ROBOT_NAME2" default="quad2"/>
+    <arg name="ROBOT_NAME3" default="quad3"/>
+    
+    <arg name="VRPN_IP" default="155.98.9.183"/>   
+       
+    <!-- waypoint parameters -->
+    <arg name="timedLoop" default="1"/>
+    <arg name="loopTiming" default="2.5"/>
+    <arg name="shapeArg" default="1"/>  <!-- 1 == square, 2 == triangle -->
+    
+    <!-- Thrust PID Gains -->
+    <arg name="tP" default="3.0"/>  
+    <arg name="tI" default="0.03"/>
+    <arg name="tD" default="0.75"/>
+    
+    <!-- Roll PID Gains -->
+    <arg name="rP" default="1.3"/>  <!-- 1.15 -->
+    <arg name="rI" default="0.0025"/> <!-- 0.002 -->
+    <arg name="rD" default="0.9"/>   <!-- 0.8 -->
+    
+    <!-- Pitch PID Gains -->
+    <arg name="pP" default="1.3"/>
+    <arg name="pI" default="0.0025"/>
+    <arg name="pD" default="0.9"/>
+    
+    <!-- Yaw PID Gains -->
+    <arg name="yP" default="3.0"/>  <!-- 4.0  -->
+    <arg name="yI" default="0.0"/>  <!-- 0.0  -->
+    <arg name="yD" default="0.2"/> <!-- 0.25 -->
+
+    <arg name="crazyflieSDK" default="~/crazyflie-clients-python/lib" />
+    <!--<arg name="uri" default="radio://0/80/2M" />-->
+    <arg name="uri1" default="radio://0/72/2M" />
+    <arg name="uri2" default="radio://0/80/2M" />
+    <arg name="uri3" default="radio://0/42/2M" />
+    <arg name="joy_dev" default="/dev/input/js0" />
+
+    
+    <include file="$(find crazyflie)/launch/crazyflie_server.launch">
+        <arg name="crazyflieSDK" value="$(arg crazyflieSDK)" />server
+    </include>
+    
+    <node pkg="ros_vrpn_client" name="$(arg ROBOT_NAME1)" type="ros_vrpn_client" args="_vrpn_server_ip:=$(arg VRPN_IP)" required="true" /> -->
+    <node pkg="ros_vrpn_client" name="$(arg ROBOT_NAME2)" type="ros_vrpn_client" args="_vrpn_server_ip:=$(arg VRPN_IP)" required="true" /> -->
+    <node pkg="ros_vrpn_client" name="$(arg ROBOT_NAME3)" type="ros_vrpn_client" args="_vrpn_server_ip:=$(arg VRPN_IP)" required="true" /> -->
+    
+        <group ns="$(arg ROBOT_NAME1)">
+        <param name="thrustP" value="$(arg tP)"/>
+        <param name="thrustI" value="$(arg tI)"/>
+        <param name="thrustD" value="$(arg tD)"/>
+        <param name="rollP" value="$(arg rP)"/>
+        <param name="rollI" value="$(arg rI)"/>
+        <param name="rollD" value="$(arg rD)"/>
+        <param name="pitchP" value="$(arg pP)"/>
+        <param name="pitchI" value="$(arg pI)"/>
+        <param name="pitchD" value="$(arg pD)"/>
+        <param name="yawP" value="$(arg yP)"/>
+        <param name="yawI" value="$(arg yI)"/>
+        <param name="yawD" value="$(arg yD)"/>
+        <param name="timed_loop" value="$(arg timedLoop)"/>
+        <param name="waypoint_timestep" value="$(arg loopTiming)"/>
+        <param name="robot_name" value="$(arg ROBOT_NAME1)"/>
+        <param name="trajectory_shape" value="$(arg shapeArg)"/>
+        <include file="$(find crazyflie)/launch/crazyflie_add.launch">
+            <arg name="uri" value="$(arg uri1)" />
+            <arg name="tf_prefix" value="$(arg ROBOT_NAME1)" />
+        </include>
+        <param name="mocap_name" value="$(arg ROBOT_NAME1)"/>
+        <node pkg = "darc_mocap"    type="mocap"    name="Mocap"    respawn="true" output="screen"/>
+        <node pkg="joy" type="joy_node" name="Xbox_Controller" args="$(arg joy_dev)" respawn="true"/>
+        <node pkg = "darc_waypoints"     type="waypoint_generator" name="Waypoints" respawn = "true"/>
+        <node pkg = "darc_manual_fly" type="darc_manual_fly_node" name="Control" respawn="true"/>
+        <node pkg = "darc_position_hold" type="position_hold" name="Pos_Hold"  respawn = "true"     output="screen"/>    
+        <node pkg = "darc_crazyflie" type="darc_crazyflie_node" name="darc_crazyflie" respawn = "true" />   
+    </group>-->
+    
+    <group ns="$(arg ROBOT_NAME2)">
+        <param name="thrustP" value="$(arg tP)"/>
+        <param name="thrustI" value="$(arg tI)"/>
+        <param name="thrustD" value="$(arg tD)"/>
+        <param name="rollP" value="$(arg rP)"/>
+        <param name="rollI" value="$(arg rI)"/>
+        <param name="rollD" value="$(arg rD)"/>
+        <param name="pitchP" value="$(arg pP)"/>
+        <param name="pitchI" value="$(arg pI)"/>
+        <param name="pitchD" value="$(arg pD)"/>
+        <param name="yawP" value="$(arg yP)"/>
+        <param name="yawI" value="$(arg yI)"/>
+        <param name="yawD" value="$(arg yD)"/>
+        <param name="timed_loop" value="$(arg timedLoop)"/>
+        <param name="waypoint_timestep" value="$(arg loopTiming)"/>
+        <param name="robot_name" value="$(arg ROBOT_NAME2)"/>
+        <param name="trajectory_shape" value="$(arg shapeArg)"/>
+        <include file="$(find crazyflie)/launch/crazyflie_add.launch">
+            <arg name="uri" value="$(arg uri2)" />
+            <arg name="tf_prefix" value="$(arg ROBOT_NAME2)" />
+        </include>
+        <param name="mocap_name" value="$(arg ROBOT_NAME2)"/>
+        <node pkg = "darc_mocap"    type="mocap"    name="Mocap"    respawn="true" output="screen"/>
+        <node pkg="joy" type="joy_node" name="Xbox_Controller" args="$(arg joy_dev)" respawn="true"/>
+        <node pkg = "darc_waypoints"     type="waypoint_generator" name="Waypoints" respawn = "true"/>
+        <node pkg = "darc_manual_fly" type="darc_manual_fly_node" name="Control" respawn="true"/>
+        <node pkg = "darc_position_hold" type="position_hold" name="Pos_Hold"  respawn = "true"     output="screen"/>    
+        <node pkg = "darc_crazyflie" type="darc_crazyflie_node" name="darc_crazyflie" respawn = "true" />   
+    </group>-->
+       
+    <group ns="$(arg ROBOT_NAME3)">
+        <param name="thrustP" value="$(arg tP)"/>
+        <param name="thrustI" value="$(arg tI)"/>
+        <param name="thrustD" value="$(arg tD)"/>
+        <param name="rollP" value="$(arg rP)"/>
+        <param name="rollI" value="$(arg rI)"/>
+        <param name="rollD" value="$(arg rD)"/>
+        <param name="pitchP" value="$(arg pP)"/>
+        <param name="pitchI" value="$(arg pI)"/>
+        <param name="pitchD" value="$(arg pD)"/>
+        <param name="yawP" value="$(arg yP)"/>
+        <param name="yawI" value="$(arg yI)"/>
+        <param name="yawD" value="$(arg yD)"/>
+        <param name="timed_loop" value="$(arg timedLoop)"/>
+        <param name="waypoint_timestep" value="$(arg loopTiming)"/>
+        <param name="robot_name" value="$(arg ROBOT_NAME3)"/>
+        <param name="trajectory_shape" value="$(arg shapeArg)"/>
+        <include file="$(find crazyflie)/launch/crazyflie_add.launch">
+            <arg name="uri" value="$(arg uri3)" />
+            <arg name="tf_prefix" value="$(arg ROBOT_NAME3)" />
+        </include>
+        <param name="mocap_name" value="$(arg ROBOT_NAME3)"/>
+        <node pkg = "darc_mocap"    type="mocap"    name="Mocap"    respawn="true" output="screen"/>
+        <node pkg="joy" type="joy_node" name="Xbox_Controller" args="$(arg joy_dev)" respawn="true"/>
+        <node pkg = "darc_waypoints"     type="waypoint_generator" name="Waypoints" respawn = "true"/>
+        <node pkg = "darc_manual_fly" type="darc_manual_fly_node" name="Control" respawn="true"/>
+        <node pkg = "darc_position_hold" type="position_hold" name="Pos_Hold"  respawn = "true"     output="screen"/>    
+        <node pkg = "darc_crazyflie" type="darc_crazyflie_node" name="darc_crazyflie" respawn = "true" />   
+    </group>-->
+    
+    <!--<node name ="darc_manual_fly" pkg = "darc_manual_fly" type="darc_manual_fly_node" >
+    </node> -->
+    
+    <!--<node pkg="rqt_plot" type="rqt_plot" name="rqt_plot2" args="/battery"/>-->
+    
+</launch>

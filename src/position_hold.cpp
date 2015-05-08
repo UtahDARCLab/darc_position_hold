@@ -32,6 +32,9 @@ double curr_yaw, curr_yaw_vel;
 double right_button, reset_button, offset_button;
 int joy_a, joy_b, startControl;
 
+// allowing the robot to land
+bool landing = false;
+
 // proportional, integral, and derivative gain arrays
 double Kp[4], Ki[4], Kd[4];
 
@@ -101,10 +104,10 @@ void u_callback(const geometry_msgs::Twist& u_msg_in)
 
 // Read desired position, typically from some waypoint node
 void desired_position_callback(const geometry_msgs::Vector3& des_pos_msg_in)
-{
-    desired_pos.x = des_pos_msg_in.x;
-    desired_pos.y = des_pos_msg_in.y;
-    desired_pos.z = des_pos_msg_in.z;
+{        
+        desired_pos.x = des_pos_msg_in.x;
+        desired_pos.y = des_pos_msg_in.y; 
+        desired_pos.z = des_pos_msg_in.z;
 }
 
 // function to calculate control effort on a given axis
@@ -170,18 +173,34 @@ int main(int argc, char** argv)
         // Read in subscribed messages
         ros::spinOnce();
             
-        if( (joy_a && !startControl) || (joy_b && startControl) )
+        if(joy_a && !startControl) 
         {
-            startControl = !startControl;
-        } 
-        if(startControl)
+             startControl = true;
+
+        }
+        else if(joy_b && startControl)
+        {
+            landing = true;
+        }
+        if( startControl )
         {
             right_button = 1;
         }
         else
         {
             right_button = 0;
-        }   
+        }  
+        if (landing && startControl)
+        {
+            ROS_INFO("deisred position z = %.4f", desired_pos.z);
+            desired_pos.z -= 0.002;
+            if(desired_pos.z < 0.02)
+            {
+                desired_pos.z = -100.0;
+                startControl = false;
+            }
+        }
+     
         //seding out to make sure it reset
         // Send every other loop to slow down scree print
         /*flag = !flag;
@@ -198,10 +217,8 @@ int main(int argc, char** argv)
             }
         }
         
-        // DOES NOT WORK!!!!!
         // Rotate global axes into robot's frame (yaw only)
         rotatePositions();
-        // ^^ DOES NOT WORK!!!!!
         
         // Calculate PID control effort for each axis
         calculateControlEffort(THRUST,  rot_desired_pos[2],  rot_current_pos[2],  rot_current_vel[2]);
@@ -231,7 +248,7 @@ int main(int argc, char** argv)
         //u_out.angular.y = u_curr.angular.y;   // Pitch
         //u_out.angular.z = u_curr.angular.z;   // Yaw
         //u_out.angular.z = 0.5;
-        
+      
         u_pub.publish(u_out);
         loop_rate.sleep();
     }   
@@ -273,7 +290,6 @@ void checkForWindup(int index, double& control, double desPoint, double currPoin
 }
 
 // function to calculate rotated desired and current positions
-// DOES NOT WORK
 void rotatePositions()
 {
     Eigen::Rotation2D<float> rot2(curr_yaw);
@@ -289,3 +305,4 @@ void rotatePositions()
     rot_current_pos << (rot2*curr_pos)[0], (rot2*curr_pos)[1], current_pos.z;
     rot_current_vel << (rot2*curr_vel)[0], (rot2*curr_vel)[1], current_vel.z;
 }
+	
