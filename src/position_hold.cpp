@@ -1,4 +1,8 @@
 // Includes
+
+// I have created the services but have not done anything with them yet. I will add how we set them and the listeners on the other end Monday morning.
+
+
 #include <ros/ros.h>
 #include <geometry_msgs/Vector3.h>
 #include <geometry_msgs/Twist.h>
@@ -6,6 +10,7 @@
 #include <std_msgs/Float32.h>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
+#include <std_srvs/Empty.h>
 
 #define THRUST  0
 #define ROLL    1
@@ -108,6 +113,8 @@ void desired_position_callback(const geometry_msgs::Vector3& des_pos_msg_in)
         desired_pos.x = des_pos_msg_in.x;
         desired_pos.y = des_pos_msg_in.y; 
         desired_pos.z = des_pos_msg_in.z;
+        //ROS_INFO("desizred Z = %.4f",desired_pos.z);
+
 }
 
 // function to calculate control effort on a given axis
@@ -146,6 +153,12 @@ int main(int argc, char** argv)
     ros::Subscriber desired_pos_sub;
     desired_pos_sub = node.subscribe("desired_position",1,desired_position_callback);
     
+    // creating the srvice clients to change the trhust commands
+    ros::ServiceClient thrustOn = node.serviceClient<std_srvs::Empty>("thrustOn");
+    ros::ServiceClient thrustOff = node.serviceClient<std_srvs::Empty>("thrustOff"); 
+    std_srvs::Empty srv;
+
+    
     // Thrust proportional, integral, and derivative gains from launch file
     node.getParam("thrustP",Kp[THRUST]);
     node.getParam("thrustI",Ki[THRUST]);
@@ -175,15 +188,20 @@ int main(int argc, char** argv)
             
         if(joy_a && !startControl) 
         {
+            
              startControl = true;
+             
+             if (thrustOn.call(srv)){;}
 
         }
         else if(joy_b && startControl)
         {
             landing = true;
+            
         }
         if( startControl )
         {
+            //ROS_INFO("Right button hit");
             right_button = 1;
         }
         else
@@ -192,12 +210,12 @@ int main(int argc, char** argv)
         }  
         if (landing && startControl)
         {
-            ROS_INFO("deisred position z = %.4f", desired_pos.z);
             desired_pos.z -= 0.002;
             if(desired_pos.z < 0.02)
             {
-                desired_pos.z = -100.0;
                 startControl = false;
+                landing = false;
+                if (thrustOff.call(srv)){;}
             }
         }
      
