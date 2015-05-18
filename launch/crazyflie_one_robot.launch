@@ -10,8 +10,9 @@
        
     <!-- waypoint parameters -->
     <arg name="timedLoop" default="1"/>
-    <arg name="loopTiming" default="5.0"/>
-    
+    <arg name="loopTiming" default="2.5"/>
+    <arg name="shapeArg" default="1"/>  <!-- 1 == square, 2 == triangle -->
+
     <!-- Thrust PID Gains -->
     <arg name="tP" default="3.0"/>  
     <arg name="tI" default="0.03"/>

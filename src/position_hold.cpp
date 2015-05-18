@@ -210,7 +210,7 @@ int main(int argc, char** argv)
         }  
         if (landing && startControl)
         {
-            desired_pos.z -= 0.002;
+            desired_pos.z -= 0.003;
             if(desired_pos.z < 0.02)
             {
                 startControl = false;
@@ -248,6 +248,8 @@ int main(int argc, char** argv)
         u_out.linear.z  = right_button*controlEffort[THRUST] + (1.0 - right_button)*u_curr.linear.z;
         u_out.angular.x = right_button*controlEffort[ROLL]   + (1.0 - right_button)*u_curr.angular.x;
         u_out.angular.y = right_button*controlEffort[PITCH]  + (1.0 - right_button)*u_curr.angular.y;
+
+
         u_out.angular.z = right_button*controlEffort[YAW]    + (1.0 - right_button)*u_curr.angular.z;  
                
         // Check for integrator windup

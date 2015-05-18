@@ -10,7 +10,8 @@
        
     <!-- waypoint parameters -->
     <arg name="timedLoop" default="1"/>
-    <arg name="loopTiming" default="5.0"/>
+    <arg name="loopTiming" default="2.5"/>
+    <arg name="shapeArg" default="2"/>  <!-- 1 == square, 2 == triangle -->
     
     <!-- Thrust PID Gains -->
     <arg name="tP" default="3.0"/>  
@@ -47,7 +48,7 @@
     
     <node pkg="ros_vrpn_client" name="$(arg ROBOT_NAME1)" type="ros_vrpn_client" args="_vrpn_server_ip:=$(arg VRPN_IP)" required="true" /> -->
     <node pkg="ros_vrpn_client" name="$(arg ROBOT_NAME2)" type="ros_vrpn_client" args="_vrpn_server_ip:=$(arg VRPN_IP)" required="true" /> -->
-    <!--<node pkg="ros_vrpn_client" name="$(arg ROBOT_NAME3)" type="ros_vrpn_client" args="_vrpn_server_ip:=$(arg VRPN_IP)" required="true" /> -->
+    <node pkg="ros_vrpn_client" name="$(arg ROBOT_NAME3)" type="ros_vrpn_client" args="_vrpn_server_ip:=$(arg VRPN_IP)" required="true" /> -->
     
     <group ns="$(arg ROBOT_NAME1)">
         <param name="thrustP" value="$(arg tP)"/>
@@ -78,7 +79,7 @@
         <node pkg = "darc_crazyflie" type="darc_crazyflie_node" name="darc_crazyflie" respawn = "true" />   
     </group>-->
     
-    <group ns="$(arg ROBOT_NAME2)">
+    <!--<group ns="$(arg ROBOT_NAME2)">
         <param name="thrustP" value="$(arg tP)"/>
         <param name="thrustI" value="$(arg tI)"/>
         <param name="thrustD" value="$(arg tD)"/>
@@ -123,6 +124,7 @@
         <param name="timed_loop" value="$(arg timedLoop)"/>
         <param name="waypoint_timestep" value="$(arg loopTiming)"/>
         <param name="robot_name" value="$(arg ROBOT_NAME3)"/>
+        <param name="trajectory_shape" value="$(arg shapeArg)"/>
         <include file="$(find crazyflie)/launch/crazyflie_add.launch">
             <arg name="uri" value="$(arg uri3)" />
             <arg name="tf_prefix" value="$(arg ROBOT_NAME3)" />
@@ -133,9 +135,8 @@
         <node pkg = "darc_waypoints"     type="waypoint_generator" name="Waypoints" respawn = "true"/>
         <node pkg = "darc_manual_fly" type="darc_manual_fly_node" name="Control" respawn="true"/>
         <node pkg = "darc_position_hold" type="position_hold" name="Pos_Hold"  respawn = "true"     output="screen"/>    
-        <node pkg = "darc_crazyflie" type="darc_crazyflie_node" name="darc_crazyflie" respawn = "true" />   
+        <node pkg = "darc_crazyflie" type="darc_crazyflie_node" name="darc_crazyflie" respawn = "true" output = "screen"/>   
     </group>-->
-    
     <!--<node name ="darc_manual_fly" pkg = "darc_manual_fly" type="darc_manual_fly_node" >
     </node> -->
     
