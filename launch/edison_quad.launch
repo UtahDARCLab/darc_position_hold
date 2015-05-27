@@ -2,9 +2,22 @@
 
 <launch>
   
-    <node pkg="ros_vrpn_client" name="quad" type="ros_vrpn_client" args="_vrpn_server_ip:=155.98.9.183" required="true" />
+    <arg name="ROBOT_NAME" default="quad1"/> 
+    <arg name="timedLoop" default="1"/>
+    <arg name="loopTiming" default="6"/>
+    <arg name="shapeArg" default="3"/>  <!-- 1 == square, 2 == triangle, 3 ==  ground effects test -->
+    
+    <param name="timed_loop" value="$(arg timedLoop)"/>
+    <param name="waypoint_timestep" value="$(arg loopTiming)"/>
+    <param name="robot_name" value="$(arg ROBOT_NAME)"/>b
+    <param name="trajectory_shape" value="$(arg shapeArg)"/>
+    <param name="mocap_name" value="$(arg ROBOT_NAME)"/>
+        
+    <node pkg="ros_vrpn_client" name="$(arg ROBOT_NAME)" type="ros_vrpn_client" args="_vrpn_server_ip:=155.98.9.183" required="true" />
     <node pkg="joy" type="joy_node" name="Xbox_Controller" args="/dev/input/js0" respawn="true"/>    
     <node pkg = "darc_waypoints"     type="waypoint_generator" name="Waypoints" respawn = "true"/>
+    
+    
     <node pkg = "darc_mocap"         type="mocap"         name="Mocap"         respawn="true" />
     <node pkg = "darc_manual_fly" type="darc_manual_fly_node" name="Control" respawn="true"/>
   

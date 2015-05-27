@@ -1,0 +1,30 @@
+Open crazyflie_one_robot.launch (catkin_ws/src/darc_position_hold/launch)
+
+Uncomment the crazyflie for the test (quad 1, 2, or 3) and SAVE the file
+
+
+open a termina and go to:
+    cd catkin_ws
+    
+    
+if you need to change the height of the test use gedit and open waypoint_generator.cpp
+    catkin_ws/src/darc_waypoints/src/waypoint_generator.cpp
+    The heigh and number of steps are on lines 183 and 184
+
+If you change this you must save it and than run catkin_make from the terminal from 
+
+When you are ready to run the test use one of the two commands:
+    in one terminal run 
+        roslaunch  darc_position_hold crazyflie_one_robot.launch
+    If baggin data in another terminal run:
+        cd catkin_ws/src/darc_position_hold/groundEffectsBags/
+        rosbag record -o IGEtest /quad1/current_position /quad1/desired_position /quad1/cmd_vel /quad1/pressure
+
+
+left bumper - resets to current positon
+a - takes off to current waypoit
+b - lands
+x - starts moving through waypoints
+y - stops moving through waypoints and hovers
+start - kills throttle
+

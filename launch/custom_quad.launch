@@ -1,31 +1,71 @@
+<?xml version="1.0"?>
+
 <launch>
+ 
+     <!-- waypoint parameters -->
+    <arg name="timedLoop" default="1"/>
+    <arg name="loopTiming" default="6"/>
+    <arg name="shapeArg" default="3"/>  <!-- 1 == square, 2 == triangle, 3 ==  ground effects test -->
+    <param name="timed_loop" value="$(arg timedLoop)"/>
+    <param name="waypoint_timestep" value="$(arg loopTiming)"/>
+    <param name="robot_name" value="$(arg ROBOT_NAME)"/>b
+    <param name="trajectory_shape" value="$(arg shapeArg)"/>
+        
+    <node pkg="ros_vrpn_client" name="quad" type="ros_vrpn_client" args="_vrpn_server_ip:=155.98.9.183" required="true" />-->
+    <!--<node pkg="ros_vrpn_client" name="quad" type="ros_vrpn_client" args="_vrpn_server_ip:=192.168.2.5" required="true"/>-->
+    <node pkg="joy" type="joy_node" name="Xbox_Controller" args="/dev/input/js0" respawn="true"/>   
+    <node pkg = "darc_waypoints"     type="waypoint_generator" name="Waypoints" respawn = "true"/>
+   
+    <arg name="person" default="0"/>
+    <param name="person_tracked" value="$(arg person)"/>
+    <arg name="number" default="0"/>
+    <param name="number_people" value="$(arg number)"/>
+    <node pkg = "urc_mocap"         type="urc_mocap_node"         name="Mocap"         respawn="true" />
+   
+    <node pkg = "darc_manual_fly" type="darc_manual_fly_node" name="Control" respawn="true"/>
+ 
+    <!-- Thrust PID Gains -->
+    <arg name="tP" default="0.5"/>
+    <param name="thrustP" value="$(arg tP)"/>
+   
+    <arg name="tI" default="0.006"/>
+    <param name="thrustI" value="$(arg tI)"/>
+   
+    <arg name="tD" default="0.42"/>
+    <param name="thrustD" value="$(arg tD)"/>
+   
+    <!-- Roll PID Gains -->
+    <arg name="rP" default="0.4"/>
+    <param name="rollP" value="$(arg rP)"/>
+   
+    <arg name="rI" default="0.00075"/>
+    <param name="rollI" value="$(arg rI)"/>
+   
+    <arg name="rD" default="0.36"/>
+    <param name="rollD" value="$(arg rD)"/>
+   
+    <!-- Pitch PID Gains -->
+    <arg name="pP" default="0.425"/>
+    <param name="pitchP" value="$(arg pP)"/>
+   
+    <arg name="pI" default="0.001"/>
+    <param name="pitchI" value="$(arg pI)"/>
+   
+    <arg name="pD" default="0.39"/>
+    <param name="pitchD" value="$(arg pD)"/>
+   
+    <!-- Yaw PID Gains -->
+    <arg name="yP" default="0.75"/>
+    <param name="yawP" value="$(arg yP)"/>
+   
+    <arg name="yI" default="0.0"/>
+    <param name="yawI" value="$(arg yI)"/>
+   
+    <arg name="yD" default="0.35"/>
+    <param name="yawD" value="$(arg yD)"/>
+   
+    <node pkg = "darc_position_hold" type="position_hold" name="Pos_Hold" respawn = "true" output="screen" />
+   
 
-<node pkg="ros_vrpn_client" name="quad" type="ros_vrpn_client" args="_vrpn_server_ip:=155.98.9.183" required="true" />
-<node pkg="joy" type="joy_node" name="Xbox_Controller" args="/dev/input/js0" respawn="true"/>
-
-<node pkg = "darc_mocap"         type="mocap"         name="Mocap"         respawn="true" />
-<node pkg = "darc_manual_fly" type="darc_manual_fly_node" name="Control" respawn="true"/>
-
-<arg name="pd" default="0.0"/>
-<param name="pd_ratio" value="$(arg pd)"/>
-
-<arg name="pi" default="0.0"/>
-<param name="pi_ratio" value="$(arg pi)"/>
-
-<arg name="kx" default="0.0"/>
-<param name="x_gain" value="$(arg kx)"/>
-
-<arg name="ky" default="0.0"/>
-<param name="y_gain" value="$(arg ky)"/>
-
-<arg name="kz" default="0.0"/>
-<param name="z_gain" value="$(arg kz)"/>
-
-<arg name="kyaw" default="0.00"/>
-<param name="yaw_gain" value="$(arg kyaw)"/>
-
-<node pkg = "darc_position_hold" type="position_hold" name="Pos_Hold"      respawn = "true" output="screen"/>
-<node pkg = "darc_waypoints"     type="waypoint_generator" name="Waypoints" respawn = "true" />
-
+   
 </launch>
-

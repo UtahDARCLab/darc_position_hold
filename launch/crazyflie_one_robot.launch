@@ -11,10 +11,10 @@
     <!--<arg name="uri" default="radio://0/72/2M" />-->
     
     <!-- Quad 2-->
-    <arg name="uri" default="radio://0/80/2M" />-->
+    <!--<arg name="uri" default="radio://0/80/2M" />-->
     
     <!-- Quad 3-->
-    <!--<arg name="uri" default="radio://0/42/2M" />-->
+    <arg name="uri" default="radio://0/42/2M" />-->
     
     <arg name="joy_dev" default="/dev/input/js0" />
     
