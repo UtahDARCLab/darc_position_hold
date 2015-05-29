@@ -5,16 +5,16 @@
     <arg name="ROBOT_NAME" default="quad1"/> 
     <arg name="crazyflieSDK" default="~/crazyflie-clients-python/lib" />
     <!--<arg name="uri" default="radio://0/80/2M" />-->
+    <arg name="bagData" default = "false"/>
     
-    
-    <!-- Quad 1-->
+    <!-- Quad 1 Yellow -->
     <!--<arg name="uri" default="radio://0/72/2M" />-->
     
-    <!-- Quad 2-->
-    <!--<arg name="uri" default="radio://0/80/2M" />-->
+    <!-- Quad 2 Red -->
+    <arg name="uri" default="radio://0/80/2M" />-->
     
-    <!-- Quad 3-->
-    <arg name="uri" default="radio://0/42/2M" />-->
+    <!-- Quad 3 Blue-->
+    <!--<arg name="uri" default="radio://0/42/2M" />-->
     
     <arg name="joy_dev" default="/dev/input/js0" />
     
@@ -82,8 +82,6 @@
         <node pkg = "darc_crazyflie" type="darc_crazyflie_node" name="darc_crazyflie" respawn = "true" output = "screen"/>   
     </group>-->
     
-    
-        <!--<node pkg="rosbag" type="rosbag" name="rosbagRecord"
-        args = "record -o geTest /quad1/current_position /quad1/desired_position /quad1/cmd_vel /quad1/pressure" 
-        if="$(arg bagData)"/> -->
+        <node if ="$(arg bagData)" pkg="rosbag" type="record" name="record" output="screen"
+        args = "-o /home/leang/catkin_ws/src/darc_position_hold/groundEffectsBags/geTest /quad1/current_position /quad1/desired_position /quad1/cmd_vel /quad1/pressure" />-->
 </launch>
