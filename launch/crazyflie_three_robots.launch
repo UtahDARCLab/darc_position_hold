@@ -34,9 +34,8 @@
     <arg name="yD" default="0.2"/> <!-- 0.25 -->
 
     <arg name="crazyflieSDK" default="~/crazyflie-clients-python/lib" />
-    <!--<arg name="uri" default="radio://0/80/2M" />-->
-    <!--<arg name="uri1" default="radio://0/72/2M" /> -->
-    <!--<arg name="uri2" default="radio://0/80/2M" /> -->
+    <arg name="uri1" default="radio://0/72/2M" /> -->
+    <arg name="uri2" default="radio://0/80/2M" /> -->
     <arg name="uri3" default="radio://0/42/2M" /> -->
     <arg name="joy_dev" default="/dev/input/js0" />
 
@@ -49,7 +48,7 @@
     <node pkg="ros_vrpn_client" name="$(arg ROBOT_NAME2)" type="ros_vrpn_client" args="_vrpn_server_ip:=$(arg VRPN_IP)" required="true" /> -->
     <node pkg="ros_vrpn_client" name="$(arg ROBOT_NAME3)" type="ros_vrpn_client" args="_vrpn_server_ip:=$(arg VRPN_IP)" required="true" /> -->
     
-        <!--<group ns="$(arg ROBOT_NAME1)">
+    <group ns="$(arg ROBOT_NAME1)">
         <param name="thrustP" value="$(arg tP)"/>
         <param name="thrustI" value="$(arg tI)"/>
         <param name="thrustD" value="$(arg tD)"/>
@@ -79,7 +78,7 @@
         <node pkg = "darc_crazyflie" type="darc_crazyflie_node" name="darc_crazyflie" respawn = "true" />   
     </group>-->
     
-    <!--<group ns="$(arg ROBOT_NAME2)">
+      <group ns="$(arg ROBOT_NAME2)">
         <param name="thrustP" value="$(arg tP)"/>
         <param name="thrustI" value="$(arg tI)"/>
         <param name="thrustD" value="$(arg tD)"/>
@@ -109,7 +108,7 @@
         <node pkg = "darc_crazyflie" type="darc_crazyflie_node" name="darc_crazyflie" respawn = "true" />   
     </group>-->
        
-    <group ns="$(arg ROBOT_NAME3)">
+        <group ns="$(arg ROBOT_NAME3)">
         <param name="thrustP" value="$(arg tP)"/>
         <param name="thrustI" value="$(arg tI)"/>
         <param name="thrustD" value="$(arg tD)"/>
@@ -136,12 +135,10 @@
         <node pkg = "darc_waypoints"     type="waypoint_generator" name="Waypoints" respawn = "true"/>
         <node pkg = "darc_manual_fly" type="darc_manual_fly_node" name="Control" respawn="true"/>
         <node pkg = "darc_position_hold" type="position_hold" name="Pos_Hold"  respawn = "true"     output="screen"/>    
-        <node pkg = "darc_crazyflie" type="darc_crazyflie_node" name="darc_crazyflie" respawn = "true" output = "screen"/>   
+        <node pkg = "darc_crazyflie" type="darc_crazyflie_node" name="darc_crazyflie" respawn = "true" />   
     </group>-->
-    
-    <!--<node name ="darc_manual_fly" pkg = "darc_manual_fly" type="darc_manual_fly_node" >
-    </node> -->
-    
-    <!--<node pkg="rqt_plot" type="rqt_plot" name="rqt_plot2" args="/battery"/>-->
-    
+
+        <node if ="$(arg bagData)" pkg="rosbag" type="record" name="record" output="screen"
+        args = "-o /home/leang/catkin_ws/src/darc_position_hold/groundEffectsBags/proximityTest /quad1/current_position /quad1/current_r /quad1/desired_position /quad1/cmd_vel /quad1/pressure /quad1/battery /quad1/temperature /quad2/current_position /quad2/current_r /quad2/desired_position /quad2/cmd_vel /quad2/pressure /quad2/battery /quad2/temperature /quad3/current_position /quad3/current_r /quad3/desired_position /quad3/cmd_vel /quad3/pressure /quad3/battery /quad3/temperature" />-->
+   
 </launch>

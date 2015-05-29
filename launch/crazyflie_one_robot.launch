@@ -11,10 +11,10 @@
     <!--<arg name="uri" default="radio://0/72/2M" />-->
     
     <!-- Quad 2 Red -->
-    <arg name="uri" default="radio://0/80/2M" />-->
+    <!--<arg name="uri" default="radio://0/80/2M" />-->
     
     <!-- Quad 3 Blue-->
-    <!--<arg name="uri" default="radio://0/42/2M" />-->
+    <arg name="uri" default="radio://0/42/2M" />-->
     
     <arg name="joy_dev" default="/dev/input/js0" />
     
@@ -23,7 +23,7 @@
     <!-- waypoint parameters -->
     <arg name="timedLoop" default="1"/>
     <arg name="loopTiming" default="6"/>
-    <arg name="shapeArg" default="3"/>  <!-- 1 == square, 2 == triangle, 3 ==  ground effects test -->
+    <arg name="shapeArg" default="3"/>  <!-- 1 == square, 2 == triangle, 3 ==  proximity effects test -->
 
     <!-- Thrust PID Gains -->
     <arg name="tP" default="3.0"/>  
@@ -83,5 +83,5 @@
     </group>-->
     
         <node if ="$(arg bagData)" pkg="rosbag" type="record" name="record" output="screen"
-        args = "-o /home/leang/catkin_ws/src/darc_position_hold/groundEffectsBags/geTest /quad1/current_position /quad1/desired_position /quad1/cmd_vel /quad1/pressure" />-->
+        args = "-o /home/leang/catkin_ws/src/darc_position_hold/groundEffectsBags/proximityTest -a" />-->
 </launch>
